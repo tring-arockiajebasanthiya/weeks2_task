@@ -98,7 +98,7 @@ class Order {
     }
 }
 
-public class Main {
+public class Restaurant_Management {
     public static void main(String[] args) {
         System.out.println("=====================================");
         System.out.println("        WELCOME TO OUR RESTAURANT    ");
