@@ -4,16 +4,13 @@ public class PhoneDirectoryDSA {
     public static void main(String[] args) {
         PhoneDirectory directory = new PhoneDirectory();
 
-        // Insert phone numbers
         directory.insert("9876543210");
         directory.insert("9123456789");
         directory.insert("9555123456");
 
-        // Search for phone numbers
         System.out.println("Searching for 9123456789: " + directory.search("9123456789"));
         System.out.println("Searching for 9000000000: " + directory.search("9000000000"));
 
-        // Display stored numbers in sorted order
         System.out.println("Stored phone numbers in sorted order:");
         directory.displaySortedNumbers();
     }
@@ -31,7 +28,7 @@ class PhoneDirectory {
         root = new TrieNode();
     }
 
-    // Insert a phone number into the Trie
+    
     public void insert(String phoneNumber) {
         TrieNode node = root;
         for (char digit : phoneNumber.toCharArray()) {
@@ -40,8 +37,6 @@ class PhoneDirectory {
         }
         node.isEndOfNumber = true;
     }
-
-    // Search if a phone number exists in the Trie
     public boolean search(String phoneNumber) {
         TrieNode node = root;
         for (char digit : phoneNumber.toCharArray()) {
@@ -53,7 +48,7 @@ class PhoneDirectory {
         return node.isEndOfNumber;
     }
 
-    // Display all phone numbers in sorted order
+    
     public void displaySortedNumbers(TrieNode node, String prefix) {
         if (node.isEndOfNumber) {
             System.out.println(prefix);
