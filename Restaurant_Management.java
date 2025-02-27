@@ -20,58 +20,66 @@ enum MenuOption {
 }
 
 class Menu {
-    private final Map<String, Integer> menuItems = new HashMap<>();
+    private final Map<String, Map<String, Integer>> menuCategories = new HashMap<>();
 
     public Menu() {
-        menuItems.put("biryani", 150);
-        menuItems.put("fried rice", 100);
+        addCategory("Starters");
+        addCategory("Main Course");
+        addCategory("Beverages");
+
+        addItem("Starters", "Spring Rolls", 120);
+        addItem("Main Course", "Biryani", 150);
+        addItem("Beverages", "Lassi", 50);
     }
 
     public void display() {
-        System.out.println("\n=====================================");
-        System.out.println("               MENU                 ");
-        System.out.println("=====================================");
-        System.out.printf("%-20s %-10s\n", "Item", "Price");
-        System.out.println("-------------------------------------");
+        System.out.println("\n==================== MENU ====================");
+        for (Map.Entry<String, Map<String, Integer>> category : menuCategories.entrySet()) {
+            System.out.println("\n--- " + category.getKey() + " ---");
+            System.out.printf("%-20s %-10s\n", "Item", "Price");
+            System.out.println("--------------------------------");
 
-        for (Map.Entry<String, Integer> entry : menuItems.entrySet()) {
-            System.out.printf("%-20s %-10d\n", entry.getKey(), entry.getValue());
+            for (Map.Entry<String, Integer> item : category.getValue().entrySet()) {
+                System.out.printf("%-20s %-10d\n", item.getKey(), item.getValue());
+            }
         }
-
-        System.out.println("=====================================");
+        System.out.println("==============================================");
     }
 
-    public void addItem(String name, int price) {
-        if (!isValidName(name) || price <= 0) {
-            System.out.println("Invalid input! Enter a valid item name (no numbers) and a valid price.");
-            return;
+    public void addCategory(String category) {
+        menuCategories.putIfAbsent(category.toLowerCase(), new HashMap<>());
+    }
+
+    public void addItem(String category, String item, int price) {
+        if (!menuCategories.containsKey(category.toLowerCase())) {
+            System.out.println("Category doesn't exist! Adding it first.");
+            addCategory(category);
         }
-        menuItems.put(name.toLowerCase(), price);
-        System.out.println("Item '" + name + "' added successfully!");
+        menuCategories.get(category.toLowerCase()).put(item.toLowerCase(), price);
+        System.out.println("Item '" + item + "' added to " + category + "!");
     }
 
-    public void removeItem(String name) {
-        if (!isValidName(name)) {
-            System.out.println("Enter a valid item name (no numbers allowed).");
-            return;
+    public void removeItem(String item) {
+        for (Map.Entry<String, Map<String, Integer>> category : menuCategories.entrySet()) {
+            if (category.getValue().remove(item.toLowerCase()) != null) {
+                System.out.println("Item '" + item + "' removed from " + category.getKey());
+                return;
+            }
         }
-        if (menuItems.remove(name.toLowerCase()) != null) {
-            System.out.println("Item '" + name + "' removed from the menu.");
-        } else {
-            System.out.println("Item not found!");
+        System.out.println("Item not found!");
+    }
+
+    public int search(String item) {
+        for (Map<String, Integer> items : menuCategories.values()) {
+            if (items.containsKey(item.toLowerCase())) {
+                return items.get(item.toLowerCase());
+            }
         }
+        return -1;
     }
 
-    public int search(String name) {
-        return menuItems.getOrDefault(name.toLowerCase(), -1);
-    }
-
-    public boolean itemExists(String name) {
-        return menuItems.containsKey(name.toLowerCase());
-    }
-
-    private boolean isValidName(String name) {
-        return name != null && !name.trim().isEmpty() && !name.matches(".*\\d.*");
+    public boolean itemExists(String item) {
+        return search(item) != -1;
     }
 }
 
@@ -85,10 +93,6 @@ class Order {
     }
 
     public void placeOrder(String itemName) {
-        if (!isValidName(itemName)) {
-            System.out.println("Enter a valid item name (no numbers allowed).");
-            return;
-        }
         int price = menu.search(itemName);
         if (price != -1) {
             orderList.add(itemName);
@@ -114,7 +118,6 @@ class Order {
             System.out.println("\nYour order is empty.");
             return;
         }
-
         System.out.println("\n========= Your Order =========");
         System.out.printf("%-20s %-10s\n", "Item", "Price");
         System.out.println("-------------------------------");
@@ -125,10 +128,6 @@ class Order {
         System.out.println("-------------------------------");
         System.out.printf("%-20s %-10d\n", "Total Amount", totalAmount);
         System.out.println("===============================");
-    }
-
-    private boolean isValidName(String name) {
-        return name != null && !name.trim().isEmpty() && !name.matches(".*\\d.*");
     }
 }
 
@@ -171,12 +170,10 @@ public class Restaurant_Management {
                     order.placeOrder(orderItem);
                     break;
                 case ADD_ITEM:
-                    System.out.print("\nEnter new item name: ");
+                    System.out.print("\nEnter category name: ");
+                    String category = sc.nextLine();
+                    System.out.print("Enter new item name: ");
                     String newItem = sc.nextLine();
-                    if (!newItem.matches("^[a-zA-Z ]+$")) {
-                        System.out.println("Invalid input! Enter a valid item name (no numbers allowed).");
-                        break;
-                    }
                     System.out.print("Enter price: ");
                     int price;
                     while (true) {
@@ -189,8 +186,7 @@ public class Restaurant_Management {
                             break;
                         }
                     }
-
-                    menu.addItem(newItem, price);
+                    menu.addItem(category, newItem, price);
                     break;
                 case REMOVE_ITEM:
                     System.out.print("\nEnter the item name to remove: ");
