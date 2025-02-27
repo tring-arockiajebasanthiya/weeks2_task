@@ -42,8 +42,8 @@ class Menu {
     }
 
     public void addItem(String name, int price) {
-        if (name == null || name.isEmpty() || price <= 0) {
-            System.out.println("Invalid item name or price.");
+        if (!isValidName(name) || price <= 0) {
+            System.out.println("Invalid input! Enter a valid item name (no numbers) and a valid price.");
             return;
         }
         menuItems.put(name.toLowerCase(), price);
@@ -51,6 +51,10 @@ class Menu {
     }
 
     public void removeItem(String name) {
+        if (!isValidName(name)) {
+            System.out.println("Enter a valid item name (no numbers allowed).");
+            return;
+        }
         if (menuItems.remove(name.toLowerCase()) != null) {
             System.out.println("Item '" + name + "' removed from the menu.");
         } else {
@@ -65,6 +69,10 @@ class Menu {
     public boolean itemExists(String name) {
         return menuItems.containsKey(name.toLowerCase());
     }
+
+    private boolean isValidName(String name) {
+        return name != null && !name.trim().isEmpty() && !name.matches(".*\\d.*");
+    }
 }
 
 class Order {
@@ -77,6 +85,10 @@ class Order {
     }
 
     public void placeOrder(String itemName) {
+        if (!isValidName(itemName)) {
+            System.out.println("Enter a valid item name (no numbers allowed).");
+            return;
+        }
         int price = menu.search(itemName);
         if (price != -1) {
             orderList.add(itemName);
@@ -88,13 +100,13 @@ class Order {
     }
 
     public void removeOrderItem(String itemName) {
-        if (orderList.remove(itemName)) {
-            int price = menu.search(itemName);
-            totalAmount -= price;
-            System.out.println("Item '" + itemName + "' removed from the order.");
-        } else {
+        if (!orderList.remove(itemName)) {
             System.out.println("Item not found in your order.");
+            return;
         }
+        int price = menu.search(itemName);
+        totalAmount -= price;
+        System.out.println("Item '" + itemName + "' removed from the order.");
     }
 
     public void viewOrder() {
@@ -115,8 +127,8 @@ class Order {
         System.out.println("===============================");
     }
 
-    public int getTotal() {
-        return totalAmount;
+    private boolean isValidName(String name) {
+        return name != null && !name.trim().isEmpty() && !name.matches(".*\\d.*");
     }
 }
 
@@ -161,14 +173,23 @@ public class Restaurant_Management {
                 case ADD_ITEM:
                     System.out.print("\nEnter new item name: ");
                     String newItem = sc.nextLine();
-                    System.out.print("Enter price: ");
-                    if (!sc.hasNextInt()) {
-                        System.out.println("Invalid price! Please enter a number.");
-                        sc.next();
-                        continue;
+                    if (!newItem.matches("^[a-zA-Z ]+$")) {
+                        System.out.println("Invalid input! Enter a valid item name (no numbers allowed).");
+                        break;
                     }
-                    int price = sc.nextInt();
-                    sc.nextLine();
+                    System.out.print("Enter price: ");
+                    int price;
+                    while (true) {
+                        if (!sc.hasNextInt()) {
+                            System.out.println("Invalid price! Please enter a valid number.");
+                            sc.next();
+                        } else {
+                            price = sc.nextInt();
+                            sc.nextLine();
+                            break;
+                        }
+                    }
+
                     menu.addItem(newItem, price);
                     break;
                 case REMOVE_ITEM:
@@ -185,6 +206,10 @@ public class Restaurant_Management {
                 case SEARCH_ITEM:
                     System.out.print("\nEnter item name to search: ");
                     String searchItem = sc.nextLine();
+                    if (!searchItem.matches("^[a-zA-Z ]+$")) {
+                        System.out.println("Invalid input! Enter a valid item name (no numbers allowed).");
+                        break;
+                    }
                     if (menu.itemExists(searchItem)) {
                         System.out.println("The item is available on the menu.");
                     } else {
