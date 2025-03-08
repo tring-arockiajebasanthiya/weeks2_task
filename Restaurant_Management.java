@@ -1,7 +1,22 @@
 import java.util.*;
 
+// Custom Exception for invalid inputs
+class InvalidInputException extends Exception {
+    public InvalidInputException(String message) {
+        super(message);
+    }
+}
+
+// Custom Exception for item not found
+class ItemNotFoundException extends Exception {
+    public ItemNotFoundException(String message) {
+        super(message);
+    }
+}
+
+// Enum for menu options
 enum MenuOption {
-    PLACE_ORDER(1), ADD_ITEM(2), REMOVE_ITEM(3), VIEW_BILL(4), VIEW_MENU(5), SEARCH_ITEM(6), EXIT(7);
+    PLACE_ORDER(1), ADD_ITEM(2), REMOVE_ITEM(3), VIEW_BILL(4), VIEW_MENU(5), SEARCH_ITEM(6), REMOVE_ALL_ITEM(7), EXIT(8);
 
     private final int option;
 
@@ -19,71 +34,82 @@ enum MenuOption {
     }
 }
 
-class Menu {
-    private final Map<String, Map<String, Integer>> menuCategories = new HashMap<>();
+// Base class
+class Restaurant {
+    protected boolean isValidName(String name) {
+        return name != null && !name.trim().isEmpty() && !name.matches(".*\\d.*");
+    }
+}
+
+// Menu class inheriting from Restaurant
+class Menu extends Restaurant {
+    private final Map<String, Map<String, Integer>> menuItems = new HashMap<>();
 
     public Menu() {
-        addCategory("Starters");
-        addCategory("Main Course");
-        addCategory("Beverages");
-
-        addItem("Starters", "Spring Rolls", 120);
-        addItem("Main Course", "Biryani", 150);
-        addItem("Beverages", "Lassi", 50);
+        addItem("Biryani", "Main Course", 150);
+        addItem("Fried Rice", "Main Course", 100);
     }
 
     public void display() {
-        System.out.println("\n==================== MENU ====================");
-        for (Map.Entry<String, Map<String, Integer>> category : menuCategories.entrySet()) {
-            System.out.println("\n--- " + category.getKey() + " ---");
+        System.out.println("\n============= MENU =============");
+
+        for (Map.Entry<String, Map<String, Integer>> categoryEntry : menuItems.entrySet()) {
+            System.out.println("\nCategory: " + categoryEntry.getKey());
             System.out.printf("%-20s %-10s\n", "Item", "Price");
             System.out.println("--------------------------------");
 
-            for (Map.Entry<String, Integer> item : category.getValue().entrySet()) {
-                System.out.printf("%-20s %-10d\n", item.getKey(), item.getValue());
+            for (Map.Entry<String, Integer> entry : categoryEntry.getValue().entrySet()) {
+                System.out.printf("%-20s %-10d\n", entry.getKey(), entry.getValue());
             }
         }
-        System.out.println("==============================================");
+        System.out.println("================================");
     }
 
-    public void addCategory(String category) {
-        menuCategories.putIfAbsent(category.toLowerCase(), new HashMap<>());
-    }
-
-    public void addItem(String category, String item, int price) {
-        if (!menuCategories.containsKey(category.toLowerCase())) {
-            System.out.println("Category doesn't exist! Adding it first.");
-            addCategory(category);
-        }
-        menuCategories.get(category.toLowerCase()).put(item.toLowerCase(), price);
-        System.out.println("Item '" + item + "' added to " + category + "!");
-    }
-
-    public void removeItem(String item) {
-        for (Map.Entry<String, Map<String, Integer>> category : menuCategories.entrySet()) {
-            if (category.getValue().remove(item.toLowerCase()) != null) {
-                System.out.println("Item '" + item + "' removed from " + category.getKey());
-                return;
+    public void addItem(String name, String category, int price) {
+        try {
+            if (!isValidName(name) || !isValidName(category) || price <= 0) {
+                throw new InvalidInputException("Invalid item name, category, or price!");
             }
+            menuItems.putIfAbsent(category, new HashMap<>());
+            menuItems.get(category).put(name, price);
+            System.out.println("Item '" + name + "' added successfully under '" + category + "'!");
+        } catch (InvalidInputException e) {
+            System.out.println("Error: " + e.getMessage());
         }
-        System.out.println("Item not found!");
     }
 
-    public int search(String item) {
-        for (Map<String, Integer> items : menuCategories.values()) {
-            if (items.containsKey(item.toLowerCase())) {
-                return items.get(item.toLowerCase());
+    public void removeItem(String name, String category) {
+        try {
+            if (!isValidName(name) || !isValidName(category)) {
+                throw new InvalidInputException("Invalid item name or category.");
+            }
+            if (menuItems.containsKey(category) && menuItems.get(category).remove(name) != null) {
+                System.out.println("Item '" + name + "' removed from category '" + category + "'.");
+            } else {
+                throw new ItemNotFoundException("Item not found in the menu!");
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    public void removeAllItems() {
+        menuItems.clear();
+        System.out.println("All items have been removed from the menu.");
+    }
+
+    public int search(String name) {
+        for (Map<String, Integer> category : menuItems.values()) {
+            if (category.containsKey(name)) {
+                return category.get(name);
             }
         }
         return -1;
     }
-
-    public boolean itemExists(String item) {
-        return search(item) != -1;
-    }
 }
 
-class Order {
+// Order class inheriting from Restaurant
+class Order extends Restaurant {
     private final List<String> orderList = new ArrayList<>();
     private int totalAmount = 0;
     private final Menu menu;
@@ -93,24 +119,21 @@ class Order {
     }
 
     public void placeOrder(String itemName) {
-        int price = menu.search(itemName);
-        if (price != -1) {
-            orderList.add(itemName);
-            totalAmount += price;
-            System.out.println("Order placed: " + itemName + " - " + price);
-        } else {
-            System.out.println("Sorry, " + itemName + " is not available.");
+        try {
+            if (!isValidName(itemName)) {
+                throw new InvalidInputException("Invalid item name. Numeric values are not allowed.");
+            }
+            int price = menu.search(itemName);
+            if (price != -1) {
+                orderList.add(itemName);
+                totalAmount += price;
+                System.out.println("Order placed: " + itemName + " - ₹" + price);
+            } else {
+                throw new ItemNotFoundException("Sorry, " + itemName + " is not available.");
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
         }
-    }
-
-    public void removeOrderItem(String itemName) {
-        if (!orderList.remove(itemName)) {
-            System.out.println("Item not found in your order.");
-            return;
-        }
-        int price = menu.search(itemName);
-        totalAmount -= price;
-        System.out.println("Item '" + itemName + "' removed from the order.");
     }
 
     public void viewOrder() {
@@ -118,6 +141,7 @@ class Order {
             System.out.println("\nYour order is empty.");
             return;
         }
+
         System.out.println("\n========= Your Order =========");
         System.out.printf("%-20s %-10s\n", "Item", "Price");
         System.out.println("-------------------------------");
@@ -146,76 +170,67 @@ public class Restaurant_Management {
             System.out.println("4. View your total bill");
             System.out.println("5. View the menu");
             System.out.println("6. Search for an item in the menu");
-            System.out.println("7. Exit and complete the order");
-
+            System.out.println("7. Remove all items from the menu");
+            System.out.println("8. Exit");
             System.out.print("\nYour choice: ");
-            if (!sc.hasNextInt()) {
-                System.out.println("Invalid input! Please enter a number.");
-                sc.next();
-                continue;
-            }
-            option = sc.nextInt();
-            sc.nextLine();
 
-            MenuOption choice = MenuOption.fromInt(option);
-            if (choice == null) {
-                System.out.println("Invalid option! Please try again.");
-                continue;
-            }
+            try {
+                if (!sc.hasNextInt()) {
+                    throw new InvalidInputException("Invalid input! Please enter a number.");
+                }
+                option = sc.nextInt();
+                sc.nextLine();
 
-            switch (choice) {
-                case PLACE_ORDER:
-                    System.out.print("\nEnter the item name: ");
-                    String orderItem = sc.nextLine();
-                    order.placeOrder(orderItem);
-                    break;
-                case ADD_ITEM:
-                    System.out.print("\nEnter category name: ");
-                    String category = sc.nextLine();
-                    System.out.print("Enter new item name: ");
-                    String newItem = sc.nextLine();
-                    System.out.print("Enter price: ");
-                    int price;
-                    while (true) {
-                        if (!sc.hasNextInt()) {
-                            System.out.println("Invalid price! Please enter a valid number.");
-                            sc.next();
-                        } else {
-                            price = sc.nextInt();
-                            sc.nextLine();
-                            break;
-                        }
-                    }
-                    menu.addItem(category, newItem, price);
-                    break;
-                case REMOVE_ITEM:
-                    System.out.print("\nEnter the item name to remove: ");
-                    String removeItem = sc.nextLine();
-                    menu.removeItem(removeItem);
-                    break;
-                case VIEW_BILL:
-                    order.viewOrder();
-                    break;
-                case VIEW_MENU:
-                    menu.display();
-                    break;
-                case SEARCH_ITEM:
-                    System.out.print("\nEnter item name to search: ");
-                    String searchItem = sc.nextLine();
-                    if (!searchItem.matches("^[a-zA-Z ]+$")) {
-                        System.out.println("Invalid input! Enter a valid item name (no numbers allowed).");
+                MenuOption choice = MenuOption.fromInt(option);
+                if (choice == null) {
+                    throw new InvalidInputException("Invalid option! Please try again.");
+                }
+
+                switch (choice) {
+                    case PLACE_ORDER:
+                        System.out.print("\nEnter the item name: ");
+                        String orderItem = sc.nextLine();
+                        order.placeOrder(orderItem);
                         break;
-                    }
-                    if (menu.itemExists(searchItem)) {
-                        System.out.println("The item is available on the menu.");
-                    } else {
-                        System.out.println("Sorry, the item is not available.");
-                    }
-                    break;
-                case EXIT:
-                    System.out.println("\nThank you for visiting! Have a great day!");
-                    sc.close();
-                    return;
+                    case ADD_ITEM:
+                        System.out.print("\nEnter item name: ");
+                        String newItem = sc.nextLine();
+                        System.out.print("Enter category: ");
+                        String category = sc.nextLine();
+                        System.out.print("Enter price: ");
+                        int price = sc.nextInt();
+                        sc.nextLine();
+                        menu.addItem(newItem, category, price);
+                        break;
+                    case REMOVE_ITEM:
+                        System.out.print("\nEnter the item name: ");
+                        String removeItem = sc.nextLine();
+                        System.out.print("Enter category: ");
+                        String removeCategory = sc.nextLine();
+                        menu.removeItem(removeItem, removeCategory);
+                        break;
+                    case VIEW_BILL:
+                        order.viewOrder();
+                        break;
+                    case VIEW_MENU:
+                        menu.display();
+                        break;
+                    case SEARCH_ITEM:
+                        System.out.print("\nEnter item name to search: ");
+                        String searchItem = sc.nextLine();
+                        System.out.println(menu.search(searchItem) != -1 ? "The item is available." : "Sorry, not available.");
+                        break;
+                    case REMOVE_ALL_ITEM:
+                        menu.removeAllItems();
+                        break;
+                    case EXIT:
+                        System.out.println("\nThank you for visiting! Have a good day.");
+                        sc.close();
+                        return;
+                }
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+                sc.nextLine();
             }
         }
     }
